@@ -11,6 +11,23 @@ import (
 //OutboundMessage is the basic structure for creating reply messages
 //Call this structure with the appropriate method to create a reply message
 //Limited validation is performed on the structure
+// func SendMessage() {
+// 	om := &OutboundMessage{
+// 		Channel:     "whatsapp",
+// 		Destination: "+1234567890",
+// 		Source:      "+15555555555",
+// 		SourceName:  "Our Company",
+// 	}
+
+// 	values, err := om.Text("Hello World")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+
+// 	//Send the message
+// 	_, err = http.PostForm("https://api.whatsapp.com/send", values)
+// }
+
 type OutboundMessage struct {
 	Channel        string
 	Destination    string

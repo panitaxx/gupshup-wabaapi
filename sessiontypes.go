@@ -8,26 +8,9 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
-//OutboundMessage is the basic structure for creating reply messages
-//Call this structure with the appropriate method to create a reply message
-//Limited validation is performed on the structure
-// func SendMessage() {
-// 	om := &OutboundMessage{
-// 		Channel:     "whatsapp",
-// 		Destination: "+1234567890",
-// 		Source:      "+15555555555",
-// 		SourceName:  "Our Company",
-// 	}
-
-// 	values, err := om.Text("Hello World")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	//Send the message
-// 	_, err = http.PostForm("https://api.whatsapp.com/send", values)
-// }
-
+// OutboundMessage is the basic structure for creating reply messages.
+// Call this structure with the appropriate method to create a reply message.
+// Limited validation is performed on the structure
 type OutboundMessage struct {
 	Channel        string
 	Destination    string
@@ -94,20 +77,16 @@ func (om *OutboundMessage) Image(originalURL string, previewURL string) (url.Val
 	return values, nil
 }
 
-//File creates a file message
-func (om *OutboundMessage) File(url string, filename string) (url.Values, error) {
-	values, err := om.defaultValues()
+func (om *OutboundMessage) ImageMS(original MediaServerMedia, preview MediaServerMedia) (url.Values, error) {
+	originalURL, err := original.PutFile()
 	if err != nil {
 		return nil, err
 	}
-	msg := map[string]string{
-		"type":     "file",
-		"url":      url,
-		"filename": filename,
+	previewURL, err := preview.PutFile()
+	if err != nil {
+		return nil, err
 	}
-	txt, _ := json.Marshal(msg)
-	values.Add("message", string(txt))
-	return values, nil
+	return om.Image(originalURL, previewURL)
 }
 
 //Audio creates an audio message
@@ -125,6 +104,14 @@ func (om *OutboundMessage) Audio(url string) (url.Values, error) {
 	return values, nil
 }
 
+func (om *OutboundMessage) AudioMS(media MediaServerMedia) (url.Values, error) {
+	url, err := media.PutFile()
+	if err != nil {
+		return nil, err
+	}
+	return om.Audio(url)
+}
+
 //Video creates a video message
 func (om *OutboundMessage) Video(url string, caption string) (url.Values, error) {
 	values, err := om.defaultValues()
@@ -139,6 +126,14 @@ func (om *OutboundMessage) Video(url string, caption string) (url.Values, error)
 	txt, _ := json.Marshal(msg)
 	values.Add("message", string(txt))
 	return values, nil
+}
+
+func (om *OutboundMessage) VideoMS(media MediaServerMedia, caption string) (url.Values, error) {
+	url, err := media.PutFile()
+	if err != nil {
+		return nil, err
+	}
+	return om.Video(url, caption)
 }
 
 //Creates an interactive list message

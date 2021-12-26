@@ -2,10 +2,28 @@ package wabaapi
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func ExampleOutboundMessage() {
+	om := &OutboundMessage{
+		Channel:     "whatsapp",
+		Destination: "+1234567890",
+		Source:      "+15555555555",
+		SourceName:  "Our Company",
+	}
+
+	values, err := om.Text("Hello World")
+	if err != nil {
+		panic(err)
+	}
+
+	//Send the message
+	_, err = http.PostForm("https://gupshupurl", values)
+}
 
 func TestListMessageMarshal(t *testing.T) {
 	msg := ListMessage{

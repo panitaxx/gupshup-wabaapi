@@ -4,3 +4,4 @@ This is a small go package that implements types for  Gupshup's Messaging API fo
 
 For more info see https://www.gupshup.io/developer/docs/bot-platform/guide/whatsapp-api-documentation 
 
+Not stable until  we reach v1.0

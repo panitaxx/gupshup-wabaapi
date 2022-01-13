@@ -57,6 +57,12 @@ func (m *InboundMessage) UnmarshalJSON(data []byte) error {
 			return merry.Errorf("failed to parse account-event payload: %s", err)
 		}
 		payload = tmpP
+	case "message-event":
+		var tmpP MessageEventPayload
+		if err := json.Unmarshal(tmp.Payload, &tmpP); err != nil {
+			return merry.Errorf("failed to parse message-event payload: %s", err)
+		}
+		payload = tmpP
 	case "message":
 		var tmpP InboundMessagePayload
 		if err := json.Unmarshal(tmp.Payload, &tmpP); err != nil {
@@ -86,4 +92,27 @@ type SystemEventPayload struct {
 type AccountEventPayload struct {
 	Type    string                 `json:"type"`
 	Payload map[string]interface{} `json:"payload"`
+}
+
+type MessageEventPayload struct {
+	ID          string          `json:"id"`
+	GSID        string          `json:"gsId"`
+	Type        string          `json:"type"`
+	Destination string          `json:"destination"`
+	Payload     json.RawMessage `json:"payload"`
+}
+
+func (msgEvent *MessageEventPayload) GetError() error {
+	if msgEvent.Type != "failed" {
+		return nil
+	}
+
+	var payload struct {
+		Code   int    `json:"code"`
+		Reason string `json:"reason"`
+	}
+	if err := json.Unmarshal(msgEvent.Payload, &payload); err != nil {
+		return merry.Errorf("failed to parse message-event payload: %s", err)
+	}
+	return merry.Errorf("message-event failed:[%d] %s", payload.Code, payload.Reason)
 }

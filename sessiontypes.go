@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/url"
 
+	"github.com/ansel1/merry"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
@@ -25,7 +26,7 @@ func (om *OutboundMessage) Validate() error {
 		return nil
 	}
 
-	return validation.ValidateStruct(&om,
+	return validation.ValidateStruct(om,
 		validation.Field(&om.Channel, validation.Required),
 		validation.Field(&om.Destination, validation.Required, is.E164),
 		validation.Field(&om.Source, validation.Required),
@@ -52,6 +53,11 @@ func (om *OutboundMessage) Text(text string) (url.Values, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if !om.DoNotValidate && text == "" {
+		return nil, merry.New("text cannot be empty")
+	}
+
 	msg := map[string]string{
 		"type": "text",
 		"text": text,
@@ -67,6 +73,18 @@ func (om *OutboundMessage) Image(originalURL string, previewURL string) (url.Val
 	if err != nil {
 		return nil, err
 	}
+
+	if !om.DoNotValidate {
+
+		if err = validation.Validate(originalURL, validation.Required, is.URL); err != nil {
+			return nil, err
+		}
+
+		if err = validation.Validate(previewURL, validation.Required, is.URL); err != nil {
+			return nil, err
+		}
+	}
+
 	msg := map[string]string{
 		"type":        "image",
 		"originalUrl": originalURL,
@@ -142,6 +160,13 @@ func (om *OutboundMessage) ListMessage(lm ListMessage) (url.Values, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if !om.DoNotValidate {
+		if err = lm.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
 	txt, _ := json.Marshal(lm)
 	values.Add("message", string(txt))
 	return values, nil
@@ -154,6 +179,15 @@ type ListMessage struct {
 	MsgID        string     `json:"msgid,omitempty"`
 	GlobalButton string     `json:"-"`
 	Items        []ListItem `json:"items"`
+}
+
+func (lm *ListMessage) Validate() error {
+	return validation.ValidateStruct(lm,
+		validation.Field(&lm.Title, validation.Required, validation.Length(1, 60)),
+		validation.Field(&lm.Body, validation.Required, validation.Length(1, 1024)),
+		validation.Field(&lm.Items, validation.Required, validation.Length(1, 10)),
+		validation.Field(&lm.GlobalButton, validation.Required, validation.Length(1, 20)),
+	)
 }
 
 func (lm ListMessage) MarshalJSON() ([]byte, error) {
@@ -185,10 +219,24 @@ type ListItem struct {
 	Options []ListItemOption `json:"options"`
 }
 
+func (li *ListItem) Validate() error {
+	return validation.ValidateStruct(li,
+		validation.Field(&li.Title, validation.Required),
+		validation.Field(&li.Options, validation.Required),
+	)
+}
+
 type ListItemOption struct {
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	PostbackText string `json:"postbackText"`
+}
+
+func (li *ListItemOption) Validate() error {
+	return validation.ValidateStruct(li,
+		validation.Field(&li.Title, validation.Required, validation.Length(1, 24)),
+		validation.Field(&li.Description, validation.Required, validation.Length(1, 72)),
+	)
 }
 
 func (li ListItemOption) MarshalJSON() ([]byte, error) {
